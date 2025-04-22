@@ -1,6 +1,6 @@
 import axios from "axios";
 import { useState } from "react";
-import "./Login.css";
+import "../css/Login.css";
 
 function Login({ onRegisterClick, onLoginSuccess }) {
   const [credentials, setCredentials] = useState({

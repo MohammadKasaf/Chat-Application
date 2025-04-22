@@ -1,6 +1,6 @@
 import axios from "axios";
 import React, { useEffect, useState } from "react";
-import "./Home.css";
+import "../css/Home.css";
 
 function Home({ currentUser, onLogout, onProfileClick, onChatClick }) {
   const [searchQuery, setSearchQuery] = useState("");

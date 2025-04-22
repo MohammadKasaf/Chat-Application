@@ -1,10 +1,10 @@
 import React, { useState } from "react";
 import "./App.css";
-import Chat from "./Chat";
-import Home from "./Home";
-import Login from "./Login";
-import Profile from "./Profile";
-import Register from "./Register";
+import Chat from "./component/Chat";
+import Home from "./component/Home";
+import Login from "./component/Login";
+import Profile from "./component/Profile";
+import Register from "./component/Register";
 
 function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);

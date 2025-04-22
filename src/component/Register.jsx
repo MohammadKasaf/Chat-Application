@@ -1,6 +1,7 @@
 import axios from "axios";
 import { useState } from "react";
-import './Register.css';
+import '../css/Register.css';
+
 
 const Register = ({ onLoginClick }) => {
   
