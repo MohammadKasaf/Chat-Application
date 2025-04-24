@@ -1,28 +1,40 @@
 import axios from 'axios';
 import React, { useEffect, useRef, useState } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
 import '../css/Chat.css';
 
-function Chat({ user, selectedUser, onBack }) {
+function Chat({ currentUser }) {
+  const { userId } = useParams();
+  const navigate = useNavigate();
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState('');
-  const [isOnline, setIsOnline] = useState(selectedUser?.isOnline || false);
+  const [selectedUser, setSelectedUser] = useState(null);
+  const [isOnline, setIsOnline] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const messagesEndRef = useRef(null);
 
-  // Fetch chat messages between users
   useEffect(() => {
+    const fetchUserData = async () => {
+      try {
+        const response = await axios.get(`http://localhost:8080/user/get-user-byId?userId=${userId}`);
+        setSelectedUser(response.data);
+        setIsOnline(response.data.isOnline || false);
+      } catch (err) {
+        console.error("Failed to fetch user data:", err);
+      }
+    };
+
     const fetchMessages = async () => {
       try {
         setLoading(true);
         const response = await axios.get("http://localhost:8080/message/chat-between-users", {
           params: {
-            userId1: user.id,
-            userId2: selectedUser.id
+            userId1: currentUser.id,
+            userId2: userId
           }
         });
         setMessages(response.data);
-        setError(null);
       } catch (err) {
         console.error("Failed to fetch messages:", err);
         setError("Failed to load messages. Please try again.");
@@ -31,41 +43,22 @@ function Chat({ user, selectedUser, onBack }) {
       }
     };
 
-    if (user?.id && selectedUser?.id) {
+    if (userId && currentUser?.id) {
+      fetchUserData();
       fetchMessages();
     }
-  }, [user, selectedUser]);
+  }, [userId, currentUser]);
 
-  // Scroll to the bottom when new messages arrive
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  // Check the online status of the selected user
-  useEffect(() => {
-    const checkOnlineStatus = async () => {
-      try {
-        const response = await axios.get('http://localhost:8080/user/check-online', {
-          params: { userId: selectedUser.id }
-        });
-        setIsOnline(response.data);
-      } catch (err) {
-        console.error("Error checking online status:", err);
-      }
-    };
-
-    if (selectedUser?.id) {
-      checkOnlineStatus();
-    }
-  }, [selectedUser]);
-
-  // Send a new message
   const sendMessage = async () => {
     if (!newMessage.trim()) return;
 
     const messageData = {
-      senderId: user.id,
-      receiverId: selectedUser.id,
+      senderId: currentUser.id,
+      receiverId: userId,
       content: newMessage,
       timestamp: new Date().toISOString()
     };
@@ -77,8 +70,8 @@ function Chat({ user, selectedUser, onBack }) {
       {
         id: tempId,
         ...messageData,
-        senderName: user.username,
-        receiverName: selectedUser.username,
+        senderName: currentUser.username,
+        receiverName: selectedUser?.username,
         status: isOnline ? 'DELIVERED' : 'SENT'
       }
     ]);
@@ -86,16 +79,13 @@ function Chat({ user, selectedUser, onBack }) {
     setNewMessage("");
 
     try {
-      const response = await axios.post("http://localhost:8080/message/send-message", messageData);
-      console.log("Server response:", response.data);
+      await axios.post("http://localhost:8080/message/send-message", messageData);
     } catch (err) {
       console.error("Failed to send message:", err);
-      setError("Failed to send message. Please try again.");
       setMessages(prev => prev.filter(msg => msg.id !== tempId));
     }
   };
 
-  // Handle 'Enter' key press for sending a message
   const handleKeyPress = (e) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
@@ -103,35 +93,18 @@ function Chat({ user, selectedUser, onBack }) {
     }
   };
 
-  // Get the status of a message (DELIVERED/SENT)
-  const getMessageStatus = (msg) => {
-    if (msg.senderName === user.username) {
-      return isOnline ? 'DELIVERED' : 'SENT';
-    }
-    return null;
-  };
-
-  // Render the message status indicator
-  const renderMessageStatus = (msg) => {
-    const status = msg.status || getMessageStatus(msg);
-    if (msg.senderName === user.username && status) {
-      return (
-        <span className={`status-indicator ${status.toLowerCase()}`}>
-          {status === 'DELIVERED' || status === 'READ' ? '✓✓' : '✓'}
-        </span>
-      );
-    }
-    return null;
+  const handleBack = () => {
+    navigate(-1); // Go back to previous page
   };
 
   return (
     <div className="chat-container">
       <div className="chat-header">
-        <button onClick={onBack} className="back-button">
+        <button onClick={handleBack} className="back-button">
           &larr; Back
         </button>
         <div className="chat-user-info">
-          <h3>{selectedUser.username}</h3>
+          <h3>{selectedUser?.username || "Loading..."}</h3>
           <span className={`online-status ${isOnline ? 'online' : 'offline'}`}>
             {isOnline ? 'Online' : 'Offline'}
           </span>
@@ -144,27 +117,27 @@ function Chat({ user, selectedUser, onBack }) {
         <div className="error-message">{error}</div>
       ) : (
         <div className="chat-messages">
-          {messages.length === 0 ? (
-            <div className="no-messages">No messages yet. Start the conversation!</div>
-          ) : (
-            messages.map((msg) => (
-              <div
-                key={msg.id || msg.timestamp}
-                className={`message-bubble ${msg.senderName === user.username ? 'sent' : 'received'}`}
-              >
-                <div className="message-content">{msg.content}</div>
-                <div className="message-meta">
-                  <small>
-                    {new Date(msg.timestamp).toLocaleTimeString([], {
-                      hour: '2-digit',
-                      minute: '2-digit'
-                    })}
-                  </small>
-                  {renderMessageStatus(msg)}
-                </div>
+          {messages.map((msg) => (
+            <div
+              key={msg.id || msg.timestamp}
+              className={`message-bubble ${msg.senderName === currentUser.username ? 'sent' : 'received'}`}
+            >
+              <div className="message-content">{msg.content}</div>
+              <div className="message-meta">
+                <small>
+                  {new Date(msg.timestamp).toLocaleTimeString([], {
+                    hour: '2-digit',
+                    minute: '2-digit'
+                  })}
+                </small>
+                {msg.senderName === currentUser.username && (
+                  <span className={`status-indicator ${msg.status?.toLowerCase() || 'sent'}`}>
+                    {msg.status === 'DELIVERED' || msg.status === 'READ' ? '✓✓' : '✓'}
+                  </span>
+                )}
               </div>
-            ))
-          )}
+            </div>
+          ))}
           <div ref={messagesEndRef} />
         </div>
       )}

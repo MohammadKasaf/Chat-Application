@@ -1,13 +1,15 @@
 import axios from "axios";
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import "../css/Login.css";
 
-function Login({ onRegisterClick, onLoginSuccess }) {
+function Login({ onLoginSuccess }) {
   const [credentials, setCredentials] = useState({
     username: "",
     password: ""
   });
   const [loading, setLoading] = useState(false);
+  const navigate = useNavigate();
 
   const handleChange = (e) => {
     setCredentials((prev) => ({
@@ -31,20 +33,24 @@ function Login({ onRegisterClick, onLoginSuccess }) {
         }
       });
 
-      console.log("Login API response:", response.data);
-      
       if (!response.data?.userId) {
         throw new Error("Server did not return user ID");
       }
 
       localStorage.setItem("usernameForLogout", credentials.username);
+      localStorage.setItem("userId", response.data.userId);
       onLoginSuccess(response.data);
+      navigate("/home");
     } catch (err) {
       console.error("Login error:", err);
       alert("Login failed: " + (err.response?.data?.message || err.message));
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleRegisterClick = () => {
+    navigate("/register");
   };
 
   return (
@@ -82,7 +88,7 @@ function Login({ onRegisterClick, onLoginSuccess }) {
       </button>
       
       <p className="create-account">Don't have an account?</p>
-      <button className="register-btn" onClick={onRegisterClick}>
+      <button className="register-btn" onClick={handleRegisterClick}>
         Register
       </button>
     </div>

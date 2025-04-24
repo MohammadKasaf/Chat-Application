@@ -1,16 +1,17 @@
 import axios from "axios";
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import '../css/Register.css';
 
-
-const Register = ({ onLoginClick }) => {
-  
+const Register = () => {
   const [formData, setFormData] = useState({
     username: "",
     email: "",
     password: "",
     dob: "",
   });
+  const [loading, setLoading] = useState(false);
+  const navigate = useNavigate();
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -19,6 +20,7 @@ const Register = ({ onLoginClick }) => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setLoading(true);
 
     try {
       await axios.post("http://localhost:8080/user/register-user", formData, {
@@ -28,11 +30,17 @@ const Register = ({ onLoginClick }) => {
       });
 
       alert("User registered successfully!");
-      onLoginClick();
+      navigate("/login");
     } catch (error) {
       console.error("Registration failed:", error);
-      alert("Registration failed: " + (error.response?.data || error.message));
+      alert("Registration failed: " + (error.response?.data?.message || error.message));
+    } finally {
+      setLoading(false);
     }
+  };
+
+  const handleLoginClick = () => {
+    navigate("/login");
   };
 
   return (
@@ -84,12 +92,18 @@ const Register = ({ onLoginClick }) => {
           />
         </div>
 
-        <button className="register-btn" type="submit">Register</button>
+        <button 
+          className="register-btn" 
+          type="submit"
+          disabled={loading}
+        >
+          {loading ? "Registering..." : "Register"}
+        </button>
       </form>
 
       <p className="register-form-note">
         Already have an account?{" "}
-        <button className="register-btn-secondary" onClick={onLoginClick}>
+        <button className="register-btn-secondary" onClick={handleLoginClick}>
           Login here
         </button>
       </p>

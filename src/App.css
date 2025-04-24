@@ -7,7 +7,6 @@
   background-color: #f5f5f5;
 }
 
-/* Loading and error states */
 .loading, .error, .no-contacts {
   padding: 20px;
   text-align: center;

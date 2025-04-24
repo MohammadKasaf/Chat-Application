@@ -1,40 +1,53 @@
 import axios from 'axios';
 import React, { useEffect, useState } from "react";
+import { useNavigate, useParams } from "react-router-dom";
 import '../css/Profile.css';
 
-function Profile({ user, onBack }) {
+function Profile({ currentUser }) {
+  const { userId } = useParams();
+  const navigate = useNavigate();
   const [userData, setUserData] = useState(null);
+  const [loading, setLoading] = useState(true);
 
-  // Fetch data from the API when component mounts
   useEffect(() => {
-    if (user?.username) {
-      axios.get(`http://localhost:8080/user/get-user-byUsername?username=${user.username}`)
-        .then(response => {
-          console.log("User data fetched successfully:", response.data);  // Logs successful data
-          setUserData(response.data);  // Set the fetched user data to state
-        })
-        .catch(error => {
-          console.error("Error fetching user data:", error);  // Logs error if API fails
-        });
-    }
-  }, [user]);
+    const fetchUserData = async () => {
+      try {
+        const response = await axios.get(`http://localhost:8080/user/get-user-byId?userId=${userId}`);
+        setUserData(response.data);
+      } catch (error) {
+        console.error("Error fetching user data:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchUserData();
+  }, [userId]);
+
+  const handleBack = () => {
+    navigate(-1); // Go back to previous page
+  };
+
+  if (loading) {
+    return <div className="profile-container">Loading user data...</div>;
+  }
 
   if (!userData) {
-    return <div>Loading user data...</div>;
+    return <div className="profile-container">User not found</div>;
   }
 
   return (
     <div className="profile-container">
-      <button className="back-button" onClick={onBack}>⬅ Back</button>
+      <button className="back-button" onClick={handleBack}>⬅ Back</button>
 
       <div className="profile-header">
-        <h2 className="profile-username">{userData.username || "Unknown User"}</h2>
+        <h2 className="profile-username">{userData.username}</h2>
       </div>
 
       <div className="profile-details">
         <div className="profile-info">
           <label className="profile-label">User ID:</label>
-          <p className="profile-data">{userData.userId || "N/A"}</p>
+          <p className="profile-data">{userData.userId}</p>
         </div>
 
         <div className="profile-info">
